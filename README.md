@@ -1,4 +1,4 @@
-This is the homework repo for UCAS "计算机科学导论" course
+This is the homework repo for UCAS "机器学习导论" course
 
 # Quick start
 

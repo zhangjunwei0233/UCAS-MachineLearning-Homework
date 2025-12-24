@@ -23,3 +23,21 @@ uv run python project-sentiment-analysis/run_sentiment.py \
   --lr_scheduler_type cosine \
   --warmup_ratio 0.1
 ```
+
+lr = 2e-5
+
+score: 0.69322
+
+# Third run
+
+after adding case weight and validation set
+
+```bash
+uv run python project-sentiment-analysis/run_sentiment.py \
+  --model_name distilroberta-base \
+  --num_train_epochs 4 \
+  --lr_scheduler_type cosine \
+  --warmup_ratio 0.1
+```
+
+lr = 2e-5

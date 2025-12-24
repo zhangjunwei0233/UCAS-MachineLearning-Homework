@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+import torch
 from datasets import load_dataset
 from sklearn.metrics import accuracy_score, f1_score
 from transformers import (
@@ -115,6 +116,22 @@ def compute_metrics(eval_pred) -> Dict[str, float]:
     }
 
 
+class WeightedTrainer(Trainer):
+    def __init__(self, class_weights: torch.Tensor | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.class_weights = class_weights
+
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        labels = inputs.get("labels")
+        outputs = model(**inputs)
+        logits = outputs.get("logits")
+        loss_fn = torch.nn.CrossEntropyLoss(
+            weight=self.class_weights.to(logits.device) if self.class_weights is not None else None
+        )
+        loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
+
+
 def main():
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
@@ -158,15 +175,20 @@ def main():
         warmup_steps=args.warmup_steps,
         warmup_ratio=args.warmup_ratio,
         eval_strategy="epoch",
-        save_strategy="no",
-        load_best_model_at_end=False,
+        save_strategy="epoch",
+        load_best_model_at_end=True,
         metric_for_best_model="macro_f1",
         logging_strategy="steps",
         logging_steps=50,
         seed=args.seed,
     )
 
-    trainer = Trainer(
+    # Class weights to address imbalance (computed on training split only).
+    label_counts = np.bincount(split_dataset["train"]["label"], minlength=num_labels)
+    class_weights = (label_counts.sum() / (num_labels * label_counts)).astype(np.float32)
+    class_weights_tensor = torch.tensor(class_weights)
+
+    trainer = WeightedTrainer(
         model=model,
         args=training_args,
         train_dataset=tokenized_train,
@@ -174,9 +196,14 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
+        class_weights=class_weights_tensor,
     )
 
     trainer.train()
+
+    eval_metrics = trainer.evaluate()
+    print(f"Validation metrics: accuracy={eval_metrics.get('eval_accuracy'):.4f}, "
+          f"macro_f1={eval_metrics.get('eval_macro_f1'):.4f}")
 
     # Persist the finetuned model and tokenizer for reuse.
     trainer.save_model(args.output_dir)

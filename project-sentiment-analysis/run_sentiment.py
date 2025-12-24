@@ -52,6 +52,12 @@ def parse_args() -> argparse.Namespace:
         help="Allow loading checkpoints whose classifier head shape differs from num_labels (default: True).",
     )
     parser.add_argument(
+        "--freeze_base",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Freeze all base model weights and train only the classifier head.",
+    )
+    parser.add_argument(
         "--lr_scheduler_type",
         default="linear",
         choices=[
@@ -151,6 +157,14 @@ def main():
         label2id=label2id,
         ignore_mismatched_sizes=args.ignore_mismatched_sizes,
     )
+
+    if args.freeze_base:
+        # Freeze everything then unfreeze classifier layers so only the head trains.
+        for param in model.parameters():
+            param.requires_grad = False
+        for name, param in model.named_parameters():
+            if "classifier" in name or "pre_classifier" in name:
+                param.requires_grad = True
 
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 

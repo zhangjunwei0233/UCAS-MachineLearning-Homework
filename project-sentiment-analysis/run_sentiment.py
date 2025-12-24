@@ -47,6 +47,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight_decay", type=float, default=0.01)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
+        "--ignore_mismatched_sizes",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Allow loading checkpoints whose classifier head shape differs from num_labels (default: True).",
+    )
+    parser.add_argument(
         "--lr_scheduler_type",
         default="linear",
         choices=[
@@ -160,6 +166,7 @@ def main():
         num_labels=num_labels,
         id2label=id2label,
         label2id=label2id,
+        ignore_mismatched_sizes=args.ignore_mismatched_sizes,
     )
 
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)

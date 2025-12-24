@@ -281,3 +281,6 @@ $RECYCLE.BIN/
 # figures/
 # plots/
 # outputs/
+
+!project-sentiment-analysis/local-datasets/*
+project-sentiment-analysis/model-output

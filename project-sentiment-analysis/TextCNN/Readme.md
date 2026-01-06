@@ -48,7 +48,7 @@
 根据提交要求，不打包数据集和较大的模型参数，故提交的作业压缩包中，data、checkpoints为空文件夹，exp_runs_report中只有log文件。预训练词表也因文件较大没有放入其中
 
 ```
-assignment/
+TextCNN/
 ├── text_cnn.py              # 主模型实现和训练脚本
 ├── text_cnn_predict.py      # 单模型预测脚本
 ├── hyperparam_search.py     # 超参数网格搜索
